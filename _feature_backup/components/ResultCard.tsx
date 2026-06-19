@@ -1,0 +1,258 @@
+import React from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Linking,
+  Share,
+  ScrollView,
+  Alert,
+} from 'react-native';
+import type { ScoredJob } from '../utils/types';
+
+interface Props {
+  job: ScoredJob;
+}
+
+export default function ResultCard({ job }: Props) {
+  const handleCall = () => {
+    if (!job.담당자전화 || job.담당자전화 === '정보 없음') {
+      Alert.alert('안내', '전화번호 정보가 없습니다.');
+      return;
+    }
+    Linking.openURL(`tel:${job.담당자전화}`);
+  };
+
+  const handleLink = () => {
+    if (!job.링크) {
+      Alert.alert('안내', '공고 링크 정보가 없습니다.');
+      return;
+    }
+    Linking.openURL(job.링크);
+  };
+
+  const handleShare = async () => {
+    const text = `[구해요 요기서] ${job.채용공고명}\n회사: ${job.회사명}\n급여: ${job.급여정보}\n${job.링크}`;
+    await Share.share({ message: text });
+  };
+
+  const similarityColor =
+    job.유사도 >= 80 ? '#2060E0' : job.유사도 >= 60 ? '#E07A2C' : '#D03020';
+
+  return (
+    <ScrollView style={styles.card} showsVerticalScrollIndicator={false}>
+      {/* 1. 제목 / 회사명 / 유사도 */}
+      <View style={styles.section}>
+        <Text style={styles.jobTitle} numberOfLines={2}>
+          {job.채용공고명}
+        </Text>
+        <Text style={styles.companyName}>{job.회사명}</Text>
+        <View style={styles.similarityRow}>
+          <Text style={[styles.similarityLabel, { color: similarityColor }]}>
+            AI 적합도 {job.유사도}%
+          </Text>
+        </View>
+        <View style={styles.similarityTrack}>
+          <View
+            style={[
+              styles.similarityFill,
+              { width: `${job.유사도}%`, backgroundColor: similarityColor },
+            ]}
+          />
+        </View>
+      </View>
+
+      {/* 2. 급여 / 근무일 / 시간대 */}
+      <View style={styles.infoRow}>
+        <InfoChip label="급여" text={job.급여정보} chipIndex={0} />
+        <InfoChip label="요일" text={job.주N일} chipIndex={1} />
+        <InfoChip label="시간" text={job.근무시간대} chipIndex={2} />
+      </View>
+
+      <View style={styles.divider} />
+
+      {/* 3. 공고 요약 */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>공고 내용</Text>
+        <Text style={styles.bodyText}>{job.공고요약}</Text>
+      </View>
+
+      {/* 4. 추천 이유 */}
+      <View style={[styles.section, styles.highlightBox]}>
+        <Text style={styles.sectionTitle}>추천 이유</Text>
+        <Text style={styles.bodyText}>{job.추천이유}</Text>
+      </View>
+
+      {/* 5. 유의사항 */}
+      <View style={[styles.section, styles.warningBox]}>
+        <Text style={[styles.sectionTitle, styles.warningTitle]}>지원 시 유의사항</Text>
+        <Text style={[styles.bodyText, styles.warningText]}>{job.유의사항}</Text>
+      </View>
+
+      {/* 6. 마감일 / 연락처 */}
+      <View style={styles.metaRow}>
+        <Text style={styles.metaText}>마감일: {job.마감일}</Text>
+        <Text style={styles.metaText}>담당자: {job.담당자전화}</Text>
+      </View>
+
+      {/* 7. 버튼 3개 */}
+      <TouchableOpacity style={[styles.btn, styles.btnCall]} onPress={handleCall} activeOpacity={0.8}>
+        <Text style={styles.btnText}>바로 전화 지원하기</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={[styles.btn, styles.btnLink]} onPress={handleLink} activeOpacity={0.8}>
+        <Text style={[styles.btnText, styles.btnLinkText]}>공고 확인하기</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={[styles.btn, styles.btnShare]} onPress={handleShare} activeOpacity={0.8}>
+        <Text style={[styles.btnText, styles.btnShareText]}>공유하기</Text>
+      </TouchableOpacity>
+
+      <View style={{ height: 24 }} />
+    </ScrollView>
+  );
+}
+
+const CHIP_COLORS = [
+  { bg: '#EBF2FF', labelColor: '#5B9FFF' },
+  { bg: '#C4D9FF', labelColor: '#2060E0' },
+  { bg: '#9AB8FF', labelColor: '#1240BE' },
+];
+
+function InfoChip({ label, text, chipIndex }: { label: string; text: string; chipIndex: number }) {
+  const { bg, labelColor } = CHIP_COLORS[chipIndex] ?? CHIP_COLORS[0];
+  return (
+    <View style={[styles.chip, { backgroundColor: bg }]}>
+      <Text style={[styles.chipLabel, { color: labelColor }]}>{label}</Text>
+      <Text style={styles.chipText}>
+        {text || '정보 없음'}
+      </Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  card: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+  },
+  section: {
+    paddingHorizontal: 22,
+    paddingVertical: 16,
+  },
+  jobTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#0D1B3E',
+    lineHeight: 34,
+    marginBottom: 5,
+    letterSpacing: 0.1,
+  },
+  companyName: {
+    fontSize: 18,
+    color: '#4A5568',
+    marginBottom: 12,
+    fontWeight: '500',
+  },
+  similarityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  similarityLabel: {
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  similarityTrack: {
+    height: 6,
+    backgroundColor: '#E2E8F5',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  similarityFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  infoRow: {
+    gap: 8,
+    paddingHorizontal: 22,
+    paddingVertical: 10,
+  },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    maxWidth: '100%',
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    gap: 8,
+  },
+  chipLabel: {
+    fontSize: 14,
+    color: '#2060E0',
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  chipText: { fontSize: 17, color: '#0D1B3E', fontWeight: '600', flexShrink: 1, lineHeight: 24 },
+  divider: {
+    height: 1,
+    backgroundColor: '#E2E8F5',
+    marginHorizontal: 22,
+    marginVertical: 2,
+  },
+  sectionTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#2060E0',
+    marginBottom: 8,
+    letterSpacing: 0.3,
+  },
+  bodyText: {
+    fontSize: 20,
+    color: '#2C3550',
+    lineHeight: 32,
+  },
+  highlightBox: {
+    backgroundColor: '#EBF2FF',
+    marginHorizontal: 14,
+    borderRadius: 10,
+    marginVertical: 6,
+  },
+  warningBox: {
+    backgroundColor: '#FFF7EC',
+    marginHorizontal: 14,
+    borderRadius: 10,
+    marginVertical: 6,
+  },
+  warningTitle: { color: '#9A5000' },
+  warningText: { color: '#5A3800' },
+  metaRow: {
+    paddingHorizontal: 22,
+    paddingVertical: 12,
+    gap: 4,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F5',
+  },
+  metaText: {
+    fontSize: 17,
+    color: '#6B7A99',
+  },
+  btn: {
+    marginHorizontal: 18,
+    marginVertical: 5,
+    paddingVertical: 19,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  btnCall: {
+    backgroundColor: '#2060E0',
+    shadowColor: '#2060E0', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3, shadowRadius: 10, elevation: 5,
+  },
+  btnLink: { backgroundColor: '#FFFFFF', borderWidth: 2, borderColor: '#2060E0' },
+  btnShare: { backgroundColor: '#EBF2FF' },
+  btnText: { fontSize: 22, fontWeight: '700', color: '#FFFFFF' },
+  btnLinkText: { color: '#2060E0' },
+  btnShareText: { color: '#2060E0' },
+});
